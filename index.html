@@ -2,228 +2,990 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Oráculo - Chat IA</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Oráculo — Chat Multi-Modelo</title>
+
+  <meta name="description" content="Chat de IA com múltiplos modelos — DeepSeek, Hugging Face e detecção automática">
+  <meta name="theme-color" content="#8b5cf6">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Oráculo">
+  <link rel="apple-touch-icon" href="icon.svg">
   <link rel="manifest" href="manifest.json">
   <style>
+    /* ── Variáveis ── */
     :root {
-      --bg: #0f172a;
-      --surface: #1e293b;
-      --text: #e2e8f0;
-      --primary: #3b82f6;
-      --primary-hover: #2563eb;
+      --bg-deep:    #07050d;
+      --bg-surface: #100c1a;
+      --bg-elevated:#1a1326;
+      --bg-card:    #221b33;
+      --border:     #2e2540;
+      --gold:       #d4a853;
+      --gold-light: #f0cd7a;
+      --gold-dim:   #8b6914;
+      --purple:     #8b5cf6;
+      --purple-glow:#a78bfa;
+      --purple-dim: #5b3e9e;
+      --text:       #e8e1f0;
+      --text-muted: #887f9e;
+      --text-dim:   #5c5270;
+      --danger:     #ef4444;
+      --danger-bg:  #3b1520;
+      --success:    #10b981;
+      --radius:     12px;
+      --radius-sm:  8px;
+      --font:       'Segoe UI', system-ui, -apple-system, sans-serif;
     }
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    * { margin:0; padding:0; box-sizing:border-box; }
+
     body {
-      font-family: 'Segoe UI', system-ui, sans-serif;
-      background: var(--bg);
+      font-family: var(--font);
+      background: var(--bg-deep);
+      background-image:
+        radial-gradient(ellipse at 50% 0%, rgba(139,92,246,0.08) 0%, transparent 60%),
+        radial-gradient(ellipse at 20% 80%, rgba(212,168,83,0.04) 0%, transparent 50%);
       color: var(--text);
-      height: 100vh;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 12px;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 820px;
+      height: calc(100vh - 24px);
       display: flex;
       flex-direction: column;
-      max-width: 800px;
-      margin: 0 auto;
-      padding: 10px;
+      gap: 8px;
+      position: relative;
     }
-    h1 {
+
+    /* ════════════ HEADER ════════════ */
+    .header {
       text-align: center;
-      padding: 10px 0;
-      font-size: 1.4rem;
+      padding: 12px 0 6px;
+      position: relative;
     }
-    #chat-box {
+    .header h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--gold-light), var(--gold) 40%, var(--gold-dim));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -0.5px;
+      animation: shimmer 3s ease-in-out infinite;
+      background-size: 200% auto;
+    }
+    @keyframes shimmer {
+      0%, 100% { background-position: 0% center; }
+      50%      { background-position: 100% center; }
+    }
+    .header .divider {
+      margin: 6px auto 0;
+      width: 120px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--purple-glow), var(--gold), var(--purple-glow), transparent);
+      border-radius: 1px;
+    }
+
+    /* ════════════ TOOLBAR ════════════ */
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      justify-content: center;
+    }
+    .tool-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 7px 12px;
+      font-size: 0.78rem;
+      font-weight: 500;
+      font-family: var(--font);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: var(--bg-elevated);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+    .tool-btn:hover {
+      border-color: var(--purple);
+      color: var(--text);
+      background: var(--bg-card);
+      box-shadow: 0 0 12px rgba(139,92,246,0.2);
+    }
+    .tool-btn.danger:hover {
+      border-color: var(--danger);
+      background: var(--danger-bg);
+      color: var(--danger);
+      box-shadow: 0 0 12px rgba(239,68,68,0.2);
+    }
+    .tool-btn.success:hover {
+      border-color: var(--gold);
+      color: var(--gold);
+      background: #1a1500;
+      box-shadow: 0 0 12px rgba(212,168,83,0.2);
+    }
+    .tool-btn.voice-active {
+      border-color: var(--danger);
+      background: var(--danger-bg);
+      color: #fca5a5;
+      animation: voice-pulse 0.8s ease-in-out infinite;
+      transform: scale(1.05);
+    }
+    @keyframes voice-pulse {
+      0%, 100% { box-shadow: 0 0 8px rgba(239,68,68,0.3); border-color: #7f1d1d; }
+      50%      { box-shadow: 0 0 22px rgba(239,68,68,0.6); border-color: var(--danger); }
+    }
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 8px rgba(16,185,129,0.2); }
+      50%      { box-shadow: 0 0 18px rgba(16,185,129,0.5); }
+    }
+
+    /* ── Recording bar ── */
+    .recording-bar {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 0;
+      justify-content: center;
+    }
+    .rec-wave {
+      width: 3px;
+      height: 14px;
+      background: var(--danger);
+      border-radius: 2px;
+      animation: wave 0.6s ease-in-out infinite;
+    }
+    .rec-wave:nth-child(1) { animation-delay: 0s; }
+    .rec-wave:nth-child(2) { animation-delay: 0.1s; }
+    .rec-wave:nth-child(3) { animation-delay: 0.2s; }
+    .rec-wave:nth-child(4) { animation-delay: 0.3s; }
+    .rec-wave:nth-child(5) { animation-delay: 0.4s; }
+    @keyframes wave {
+      0%, 100% { height: 6px; opacity: 0.4; }
+      50%      { height: 18px; opacity: 1; }
+    }
+    .rec-label {
+      font-size: 0.72rem;
+      color: #fca5a5;
+      margin-left: 6px;
+      font-weight: 500;
+    }
+    #import-file { display: none; }
+
+    /* ════════════ CHAT AREA ════════════ */
+    .chat-area {
       flex: 1;
       overflow-y: auto;
-      padding: 15px;
-      background: var(--surface);
-      border-radius: 12px;
-      margin-bottom: 10px;
+      padding: 16px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      scroll-behavior: smooth;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
     }
-    .message {
-      margin: 10px 0;
+    .chat-area::-webkit-scrollbar { width: 6px; }
+    .chat-area::-webkit-scrollbar-track { background: transparent; }
+    .chat-area::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 3px;
+    }
+
+    .welcome {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 12px;
+      opacity: 0.7;
+      padding: 40px 20px;
+    }
+    .welcome .orb {
+      font-size: 3.5rem;
+      animation: float 3s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50%      { transform: translateY(-8px); }
+    }
+    .welcome h2 {
+      font-size: 1.1rem;
+      color: var(--text-muted);
+      font-weight: 400;
+      max-width: 380px;
+    }
+    .welcome .line {
+      width: 60px;
+      height: 1px;
+      background: var(--border);
+    }
+    .welcome .hint {
+      font-size: 0.78rem;
+      color: var(--text-dim);
+    }
+
+    /* messages */
+    .msg {
+      max-width: 82%;
       padding: 12px 16px;
-      border-radius: 12px;
-      max-width: 85%;
-      line-height: 1.5;
+      border-radius: var(--radius);
+      line-height: 1.55;
+      font-size: 0.93rem;
       word-wrap: break-word;
+      animation: msg-in 0.35s cubic-bezier(0.16,1,0.3,1);
+      position: relative;
     }
-    .user-msg {
-      background: var(--primary);
-      margin-left: auto;
+    @keyframes msg-in {
+      from { opacity: 0; transform: translateY(14px) scale(0.97); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .msg.user {
+      align-self: flex-end;
+      background: linear-gradient(135deg, #5b3e9e, #3d2575);
       border-bottom-right-radius: 4px;
+      border: 1px solid #6b4fb8;
     }
-    .bot-msg {
-      background: #1e3a5f;
-      margin-right: auto;
+    .msg.bot {
+      align-self: flex-start;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
       border-bottom-left-radius: 4px;
     }
-    .bot-msg.loading {
-      background: #2a3a4f;
-      color: #94a3b8;
+    .model-tag {
+      display: block;
+      font-size: 0.65rem;
+      color: var(--gold);
+      margin-bottom: 4px;
+      text-transform: lowercase;
+      opacity: 0.7;
+      letter-spacing: 0.3px;
+    }
+    .msg.loading {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
       font-style: italic;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
-    .controls {
-      display: grid;
-      gap: 10px;
-      background: var(--surface);
-      padding: 15px;
-      border-radius: 12px;
+    .typing-dots {
+      display: inline-flex;
+      gap: 3px;
+      align-items: center;
     }
-    select, button, input {
-      padding: 10px 14px;
-      border-radius: 8px;
-      border: 1px solid #334155;
-      background: var(--bg);
+    .typing-dots span {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--purple-glow);
+      display: inline-block;
+      animation: dot-blink 1.4s ease-in-out infinite;
+    }
+    .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes dot-blink {
+      0%, 80%, 100% { opacity: 0.15; transform: scale(0.6); }
+      40%           { opacity: 1;    transform: scale(1.3); }
+    }
+    .msg.error {
+      background: var(--danger-bg);
+      border-color: #5a2028;
+      color: #fca5a5;
+    }
+    .msg .time {
+      display: block;
+      font-size: 0.65rem;
+      color: var(--text-dim);
+      margin-top: 4px;
+      text-align: right;
+    }
+    .msg-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
+    }
+    .msg-actions button {
+      padding: 6px 14px;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      background: var(--bg-elevated);
       color: var(--text);
-      font-size: 0.95rem;
-      outline: none;
-    }
-    select:focus, input:focus {
-      border-color: var(--primary);
-    }
-    button {
-      background: var(--primary);
-      border: none;
+      font-family: var(--font);
+      font-size: 0.78rem;
       cursor: pointer;
-      font-weight: 600;
-      transition: background 0.2s;
+      transition: all 0.2s;
     }
-    button:hover { background: var(--primary-hover); }
-    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    .msg-actions button.apply-btn {
+      border-color: var(--success);
+      color: var(--success);
+    }
+    .msg-actions button.apply-btn:hover {
+      background: #0a2e1a;
+      box-shadow: 0 0 10px rgba(16,185,129,0.3);
+    }
+    .msg-actions button.cancel-btn {
+      border-color: var(--text-muted);
+      color: var(--text-muted);
+    }
+    .msg-actions button.cancel-btn:hover {
+      background: var(--bg-card);
+      color: var(--text);
+    }
+
+    /* ════════════ INPUT AREA ════════════ */
+    .input-area {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .model-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .model-row label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+    .model-row select {
+      flex: 1;
+      padding: 7px 10px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--bg-elevated);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 0.82rem;
+      cursor: pointer;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .model-row select:focus { border-color: var(--purple); }
+    .tts-toggle {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      cursor: pointer;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      user-select: none;
+      white-space: nowrap;
+      transition: color 0.2s;
+    }
+    .tts-toggle:hover { color: var(--text); }
+    .tts-toggle input { accent-color: var(--purple); width: 14px; height: 14px; margin: 0; }
+
     .input-row {
       display: flex;
       gap: 8px;
     }
-    #user-input { flex: 1; }
-    .model-row {
+    #user-input {
+      flex: 1;
+      padding: 10px 14px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--bg-elevated);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 0.92rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    #user-input:focus {
+      border-color: var(--purple);
+      box-shadow: 0 0 0 3px rgba(139,92,246,0.12);
+    }
+    #user-input::placeholder { color: var(--text-dim); }
+
+    #send-btn {
+      width: 46px;
+      height: 46px;
+      border: none;
+      border-radius: var(--radius-sm);
+      background: linear-gradient(135deg, var(--purple), var(--purple-dim));
+      color: #fff;
+      font-size: 1.2rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
       display: flex;
-      gap: 8px;
       align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
     }
-    .model-row label {
+    #send-btn:hover {
+      background: linear-gradient(135deg, var(--purple-glow), var(--purple));
+      box-shadow: 0 0 18px rgba(139,92,246,0.4);
+      transform: scale(1.04);
+    }
+    #send-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+    #send-btn svg {
+      width: 20px;
+      height: 20px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    /* ════════════ TOASTS ════════════ */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 20px;
+      border-radius: 24px;
+      font-size: 0.82rem;
+      z-index: 999;
+      animation: toast-in 0.3s ease, toast-out 0.3s ease 2.2s forwards;
+      pointer-events: none;
       white-space: nowrap;
-      font-size: 0.9rem;
     }
-    .model-row select { flex: 1; }
+    @keyframes toast-in  { from { opacity:0; transform:translateX(-50%) translateY(12px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }
+    @keyframes toast-out { to   { opacity:0; transform:translateX(-50%) translateY(-8px); } }
+
+    /* ════════════ RESPONSIVO ════════════ */
+    @media (max-width: 600px) {
+      body { padding: 6px; }
+      .app { height: calc(100vh - 12px); gap: 5px; }
+      .header h1 { font-size: 1.4rem; }
+      .toolbar { gap: 4px; }
+      .tool-btn { padding: 5px 10px; font-size: 0.72rem; }
+      .chat-area { padding: 10px; }
+      .msg { max-width: 90%; font-size: 0.88rem; padding: 10px 12px; }
+      .input-area { padding: 8px 10px; }
+    }
   </style>
 </head>
 <body>
-  <h1>Oráculo</h1>
-  <div id="chat-box"></div>
-  <div class="controls">
+<div class="app">
+
+  <!-- ═══ HEADER ═══ -->
+  <header class="header">
+    <h1>🔮 Oráculo</h1>
+    <div class="divider"></div>
+  </header>
+
+  <!-- ═══ TOOLBAR ═══ -->
+  <div class="toolbar">
+    <button class="tool-btn" onclick="exportHistory()" title="Baixar histórico como JSON">📥 Exportar</button>
+    <button class="tool-btn" onclick="document.getElementById('import-file').click()" title="Importar e mesclar com histórico atual">📂 Importar</button>
+    <input type="file" id="import-file" accept=".json" onchange="importHistory(event)">
+    <button class="tool-btn" id="voice-btn" onclick="toggleVoice()" title="Ditar por voz">🎤 Voz</button>
+    <button class="tool-btn danger" onclick="clearHistory()" title="Apagar toda a conversa">🗑️ Limpar</button>
+    <button class="tool-btn success" onclick="saveToGithub()" title="Salvar no repositório GitHub">🐙 Salvar GH</button>
+    <button class="tool-btn" id="improve-btn" onclick="selfImprove()" title="Analisar e melhorar o próprio código">🔧 Melhorar</button>
+  </div>
+
+  <!-- ═══ CHAT ═══ -->
+  <main class="chat-area" id="chat-box">
+    <div class="welcome" id="welcome">
+      <span class="orb">🔮</span>
+      <h2>O Oráculo aguarda sua consulta...</h2>
+      <span class="line"></span>
+      <span class="hint">Escolha um modelo e faça sua pergunta</span>
+    </div>
+  </main>
+
+  <!-- ═══ INPUT ═══ -->
+  <div class="input-area">
+    <div id="recording-bar" class="recording-bar" style="display:none">
+      <span class="rec-wave"></span><span class="rec-wave"></span><span class="rec-wave"></span><span class="rec-wave"></span><span class="rec-wave"></span>
+      <span class="rec-label">🎤 Gravando...</span>
+    </div>
     <div class="model-row">
-      <label for="model-select">Modelo:</label>
+      <label for="model-select">🧠 Modelo:</label>
       <select id="model-select">
-        <option value="auto">Auto (IA escolhe)</option>
-        <option value="deepseek">DeepSeek</option>
+        <option value="deepseek">🧠 DeepSeek</option>
+        <option value="auto">🔮 Auto (IA escolhe)</option>
+        <optgroup label="🤗 Hugging Face" id="hf-models-group">
+          <option value="" disabled>Carregando modelos...</option>
+        </optgroup>
       </select>
+      <label class="tts-toggle" title="Ler respostas em voz alta">
+        <input type="checkbox" id="tts-check" onchange="ttsEnabled = this.checked">
+        🔊
+      </label>
     </div>
     <div class="input-row">
-      <input type="text" id="user-input" placeholder="Digite sua mensagem..." />
-      <button id="send-btn" onclick="sendMessage()">Enviar</button>
+      <input type="text" id="user-input" placeholder="Digite sua mensagem..." autofocus>
+      <button id="send-btn" onclick="sendMessage()" title="Enviar">
+        <svg viewBox="0 0 24 24"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
+      </button>
     </div>
   </div>
 
-  <script>
-    const CONFIG = {
-      HF_TOKEN: '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',
-      DS_TOKEN: 'sk-b1f991113c7a4085b27614b8af309919',
-      GITHUB_TOKEN: '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',
-      GITHUB_REPO: 'samuelextremess-cell/oraculo',
-      GITHUB_BRANCH: 'main'
-    };
+</div>
 
-    const chatBox = document.getElementById('chat-box');
-    const userInput = document.getElementById('user-input');
-    const modelSelect = document.getElementById('model-select');
-    const sendBtn = document.getElementById('send-btn');
+<script>
+  // ═══════════════ STATE ═══════════════
+  const chatBox    = document.getElementById('chat-box');
+  const userInput  = document.getElementById('user-input');
+  const modelSelect = document.getElementById('model-select');
+  const sendBtn    = document.getElementById('send-btn');
+  const voiceBtn   = document.getElementById('voice-btn');
+  const STORAGE_KEY = 'oraculoHistory';
 
-    userInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') sendMessage();
-    });
+  let chatHistory = [];
+  let ttsEnabled  = false;
 
-    function addMessage(text, type) {
-      const div = document.createElement('div');
-      div.className = `message ${type}-msg`;
-      div.textContent = text;
-      chatBox.appendChild(div);
-      chatBox.scrollTop = chatBox.scrollHeight;
-      return div;
+  // ── Segurança ──
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.appendChild(document.createTextNode(str));
+    return div.innerHTML;
+  }
+
+  // ── Helpers ──
+  function timeStamp() {
+    return new Date().toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
+  }
+
+  function toast(msg) {
+    const el = document.createElement('div');
+    el.className = 'toast';
+    el.textContent = msg;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 2600);
+  }
+
+  // ── localStorage ──
+  function saveHistory() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(chatHistory)); } catch {}
+  }
+
+  function loadHistory() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) chatHistory = JSON.parse(raw);
+    } catch { chatHistory = []; }
+  }
+
+  // ── Render DOM a partir do histórico ──
+  function renderHistory() {
+    chatBox.querySelectorAll('.msg').forEach(m => m.remove());
+    chatBox.querySelector('#welcome')?.remove();
+    if (!chatHistory.length) {
+      chatBox.innerHTML = `
+        <div class="welcome" id="welcome">
+          <span class="orb">🔮</span>
+          <h2>O Oráculo aguarda sua consulta...</h2>
+          <span class="line"></span>
+          <span class="hint">Escolha um modelo e faça sua pergunta</span>
+        </div>`;
+      return;
     }
+    chatHistory.forEach(msg => addMessageDOM({
+      text: msg.text,
+      role: msg.role,
+      model: msg.model,
+      error: msg.error
+    }));
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }
 
-    async function sendMessage() {
-      const msg = userInput.value.trim();
-      if (!msg) return;
+  function addMessageDOM({ text, role, model, error }) {
+    const div = document.createElement('div');
+    div.className = `msg ${role}`;
+    if (error) div.classList.add('error');
 
-      addMessage(msg, 'user');
-      userInput.value = '';
-      sendBtn.disabled = true;
+    const safeText = escapeHtml(text);
+    const modelHtml = (role === 'bot' && model)
+      ? `<span class="model-tag">${escapeHtml(model)}</span>`
+      : '';
+    div.innerHTML = `${modelHtml}${safeText}<span class="time">${timeStamp()}</span>`;
+    chatBox.appendChild(div);
+    chatBox.scrollTop = chatBox.scrollHeight;
+    return div;
+  }
 
-      const loadingMsg = addMessage('Pensando...', 'bot');
-      loadingMsg.classList.add('loading');
+  function pushMessage(role, text, model, error) {
+    chatHistory.push({ role, text, model: model || '', error: !!error, time: new Date().toISOString() });
+    saveHistory();
+    addMessageDOM({ text, role, model, error });
+  }
 
-      try {
-        const model = modelSelect.value;
-        const reply = await getAIResponse(msg, model);
-        loadingMsg.remove();
-        addMessage(reply, 'bot');
-      } catch (err) {
-        loadingMsg.remove();
-        addMessage(`Erro: ${err.message}`, 'bot');
-      } finally {
-        sendBtn.disabled = false;
-        userInput.focus();
-      }
+  function getMessages() {
+    return chatHistory.map(m => ({ role: m.role, text: m.text, model: m.model, time: m.time }));
+  }
+
+  // ── Indicador de digitação ──
+  function showTyping() {
+    const div = document.createElement('div');
+    div.className = 'msg bot loading';
+    div.innerHTML = `Digitando <span class="typing-dots"><span></span><span></span><span></span></span><span class="time">${timeStamp()}</span>`;
+    chatBox.appendChild(div);
+    chatBox.scrollTop = chatBox.scrollHeight;
+    return div;
+  }
+
+  // ═══════════════ SEND MESSAGE ═══════════════
+  async function sendMessage() {
+    const msg = userInput.value.trim();
+    if (!msg) return;
+
+    userInput.value = '';
+    sendBtn.disabled = true;
+
+    pushMessage('user', msg, modelSelect.value);
+
+    const typingEl = showTyping();
+
+    try {
+      const { reply, model } = await getAIResponse(msg, modelSelect.value);
+      typingEl.remove();
+      pushMessage('bot', reply, model);
+      speakText(reply);
+    } catch (err) {
+      typingEl.remove();
+      pushMessage('bot', `⚠️ ${err.message}`, '', true);
+    } finally {
+      sendBtn.disabled = false;
+      userInput.focus();
     }
+  }
 
-    async function getAIResponse(prompt, model) {
-      if (model === 'deepseek') {
-        const res = await fetch('https://api.deepseek.com/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${CONFIG.DS_TOKEN}`
-          },
-          body: JSON.stringify({
-            model: 'deepseek-chat',
-            messages: [
-              { role: 'system', content: 'Você é o Oráculo, um assistente útil e direto. Responda sempre em português.' },
-              { role: 'user', content: prompt }
-            ],
-            temperature: 0.7,
-            max_tokens: 2000
-          })
-        });
-        if (!res.ok) throw new Error(`DeepSeek: ${res.status}`);
-        const data = await res.json();
-        return data.choices[0].message.content;
-      }
-
-      if (model === 'auto') {
-        const models = [
-          'deepseek-ai/DeepSeek-V3',
-          'Qwen/Qwen2.5-72B-Instruct'
-        ];
-
-        for (const hfModel of models) {
-          try {
-            const res = await fetch(`https://api-inference.huggingface.co/models/${hfModel}`, {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${CONFIG.HF_TOKEN}`,
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({ inputs: prompt })
-            });
-            if (!res.ok) continue;
-            const data = await res.json();
-            if (data[0]?.generated_text) return data[0].generated_text;
-          } catch { continue; }
-        }
-        throw new Error('Nenhum modelo disponível no momento.');
-      }
-
+  async function getAIResponse(prompt, model) {
+    let endpoint, body, modelLabel;
+    if (model === 'deepseek') {
+      endpoint = '/api/chat/deepseek';
+      body = { prompt };
+      modelLabel = 'deepseek-chat';
+    } else if (model === 'auto') {
+      endpoint = '/api/chat/auto';
+      body = { prompt };
+      modelLabel = 'auto';
+    } else if (model && model !== '') {
+      endpoint = '/api/chat/huggingface';
+      body = { prompt, model };
+      modelLabel = model;
+    } else {
       throw new Error('Modelo não reconhecido.');
     }
-  </script>
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `Erro ${res.status}`);
+    return { reply: data.reply, model: data.model || modelLabel };
+  }
+
+  // ── Carregar modelos do HuggingFace dinamicamente ──
+  async function loadModels() {
+    const group = document.getElementById('hf-models-group');
+    try {
+      const res = await fetch('/api/models');
+      if (!res.ok) throw new Error('API indisponível');
+      const models = await res.json();
+      group.innerHTML = '';
+      if (!models.length) {
+        group.innerHTML = '<option value="" disabled>Nenhum modelo encontrado</option>';
+        return;
+      }
+      models.forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m.id;
+        opt.textContent = `${m.id}`;
+        group.appendChild(opt);
+      });
+    } catch (err) {
+      group.innerHTML = '<option value="" disabled>⚠️ Falha ao carregar modelos</option>';
+      console.error('loadModels:', err);
+    }
+  }
+
+  // ═══════════════ SYSTEM INIT ═══════════════
+  function systemInit() {
+    console.log('%c🔮 Oráculo %cv1.0',
+      'color:#d4a853;font-size:1.2em;font-weight:bold;',
+      'color:#887f9e;');
+    console.log('%cChat multi-modelo • DeepSeek • Hugging Face • Auto-detecção',
+      'color:#8b5cf6;');
+    console.log('%c━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'color:#2e2540;');
+
+    const features = {
+      'Modo Auto':       '✅ (servidor)',
+      'DeepSeek API':    '✅ (servidor)',
+      'HuggingFace API': '✅ (servidor)',
+      'GitHub Sync':     '✅ (servidor)',
+      'Voz (STT)':       (window.SpeechRecognition || window.webkitSpeechRecognition) ? '✅' : '❌',
+      'Voz (TTS)':       window.speechSynthesis ? '✅' : '❌',
+      'localStorage':    (() => { try { localStorage.setItem('_t', '1'); localStorage.removeItem('_t'); return '✅'; } catch { return '❌'; } })(),
+      'Service Worker':  'serviceWorker' in navigator ? '✅' : '❌',
+      'PWA':             window.matchMedia('(display-mode: standalone)').matches ? '✅ (instalado)' : '📱 disponível'
+    };
+
+    console.table(features);
+    console.log('%c━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'color:#2e2540;');
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    systemInit();
+
+    loadHistory();
+    if (chatHistory.length) {
+      console.log(`%c📜 ${chatHistory.length} mensagens carregadas do histórico.`, 'color:#10b981;');
+    } else {
+      console.log('%c✨ Histórico vazio — exibindo boas-vindas.', 'color:#d4a853;');
+    }
+    renderHistory();
+
+    loadModels()
+      .then(() => console.log('%c🤗 Modelos HuggingFace carregados.', 'color:#10b981;'))
+      .catch(() => console.warn('⚠️ Falha ao carregar modelos HF.'));
+
+    console.log('%c🚀 Oráculo pronto.', 'color:#8b5cf6;font-weight:bold;');
+  });
+
+  // ── Event Listeners ──
+  userInput.addEventListener('keydown', e => {
+    if (sendBtn.disabled) return;
+    if (e.key === 'Enter' && !e.ctrlKey && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+    if (e.key === 'Enter' && e.ctrlKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+
+  // ── Export ──
+  function exportHistory() {
+    const msgs = getMessages();
+    if (!msgs.length) return toast('Nada para exportar.');
+    const today = new Date().toISOString().slice(0, 10);
+    const blob = new Blob([JSON.stringify(msgs, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `oraculo-backup-${today}.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast('Histórico exportado!');
+  }
+
+  // ── Import ──
+  function importHistory(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const imported = JSON.parse(reader.result);
+        if (!Array.isArray(imported)) throw new Error('Formato inválido');
+        const valid = imported
+          .filter(m => m.role === 'user' || m.role === 'bot')
+          .map(m => ({ role: m.role, text: m.text, model: m.model || '', error: !!m.error, time: m.time || new Date().toISOString() }));
+        if (!valid.length) throw new Error('Nenhuma mensagem válida no arquivo.');
+        chatHistory = chatHistory.concat(valid);
+        saveHistory();
+        renderHistory();
+        toast(`${valid.length} mensagens importadas (total: ${chatHistory.length}).`);
+      } catch (err) {
+        toast('Arquivo inválido: ' + (err.message || 'formato incorreto'));
+      }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+  }
+
+  // ── Voice (Speech-to-Text) ──
+  let recognition = null;
+  const recBar = document.getElementById('recording-bar');
+
+  function toggleVoice() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) return toast('Navegador não suporta ditado por voz.');
+
+    if (recognition) {
+      stopVoice();
+      return;
+    }
+
+    recognition = new SpeechRecognition();
+    recognition.lang = 'pt-BR';
+    recognition.interimResults = true;
+    recognition.continuous = false;
+
+    recognition.onstart = () => {
+      voiceBtn.classList.add('voice-active');
+      voiceBtn.textContent = '⏹️ Parar';
+      recBar.style.display = 'flex';
+      userInput.placeholder = 'Ouvindo...';
+    };
+
+    recognition.onresult = (e) => {
+      const transcript = Array.from(e.results)
+        .map(r => r[0].transcript)
+        .join('');
+      userInput.value = transcript;
+
+      if (e.results[0].isFinal) {
+        stopVoice();
+        if (transcript.trim()) sendMessage();
+      }
+    };
+
+    recognition.onerror = (e) => {
+      stopVoice();
+      if (e.error !== 'aborted') toast('Erro no microfone: ' + e.error);
+    };
+
+    recognition.onend = () => { stopVoice(); };
+    recognition.start();
+  }
+
+  function stopVoice() {
+    if (recognition) {
+      recognition.stop();
+      recognition = null;
+    }
+    voiceBtn.classList.remove('voice-active');
+    voiceBtn.textContent = '🎤 Voz';
+    recBar.style.display = 'none';
+    userInput.placeholder = 'Digite sua mensagem...';
+  }
+
+  // ── TTS (sintetiza resposta do bot) ──
+  function speakText(text) {
+    if (!ttsEnabled || !window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = 'pt-BR';
+    utter.rate = 1.05;
+    utter.pitch = 1.0;
+    window.speechSynthesis.speak(utter);
+  }
+
+  // ── Clear ──
+  function clearHistory() {
+    if (!chatHistory.length) return toast('Chat já está vazio.');
+    if (!confirm('Tem certeza que deseja apagar todo o histórico?')) return;
+    chatHistory = [];
+    saveHistory();
+    renderHistory();
+    toast('Histórico limpo.');
+  }
+
+  // ── Auto-melhoria ──
+  async function selfImprove() {
+    if (sendBtn.disabled) return;
+    sendBtn.disabled = true;
+    const improveBtn = document.getElementById('improve-btn');
+    improveBtn.disabled = true;
+
+    const typingEl = showTyping();
+    let analysisData = null;
+
+    try {
+      const res = await fetch('/api/improve/analyze', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+      const data = await res.json();
+      typingEl.remove();
+
+      if (!res.ok) throw new Error(data.error);
+
+      analysisData = data;
+      const short = data.analysis.length > 2000
+        ? data.analysis.slice(0, 2000) + '\n\n... (análise truncada no chat — completa na resposta da API)'
+        : data.analysis;
+
+      const div = addMessageDOM({ text: `🔧 Análise do Oráculo:\n\n${short}`, role: 'bot', model: 'deepseek-chat (auditoria)' });
+
+      const actions = document.createElement('div');
+      actions.className = 'msg-actions';
+      actions.innerHTML = `
+        <button class="apply-btn">✅ Aplicar melhorias</button>
+        <button class="cancel-btn">❌ Cancelar</button>`;
+      div.appendChild(actions);
+
+      actions.querySelector('.apply-btn').onclick = async () => {
+        actions.innerHTML = '<span style="color:var(--text-muted);font-size:0.78rem;">Aplicando melhorias...</span>';
+        try {
+          const applyRes = await fetch('/api/improve/apply', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ analysis: analysisData.analysis, files: analysisData.files })
+          });
+          const applyData = await applyRes.json();
+          if (!applyRes.ok) throw new Error(applyData.error);
+          actions.innerHTML = `<span style="color:var(--success);font-size:0.78rem;">✅ ${applyData.message}</span>`;
+          toast(applyData.message);
+        } catch (err) {
+          actions.innerHTML = `<span style="color:var(--danger);font-size:0.78rem;">⚠️ Falha: ${err.message}</span>`;
+        }
+      };
+
+      actions.querySelector('.cancel-btn').onclick = () => {
+        actions.innerHTML = '<span style="color:var(--text-dim);font-size:0.78rem;">Melhoria cancelada.</span>';
+      };
+    } catch (err) {
+      typingEl.remove();
+      pushMessage('bot', `🔧 Falha na auto-melhoria: ${err.message}`, '', true);
+    } finally {
+      sendBtn.disabled = false;
+      improveBtn.disabled = false;
+      userInput.focus();
+    }
+  }
+  // ── Save GitHub ──
+  async function saveToGithub() {
+    const msgs = getMessages();
+    if (!msgs.length) return toast('Nada para salvar.');
+
+    sendBtn.disabled = true;
+    try {
+      const res = await fetch('/api/github/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: msgs })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `Erro ${res.status}`);
+      toast(`Salvo no GitHub! (${data.path})`);
+    } catch (err) {
+      toast(`Falha: ${err.message}`);
+    } finally {
+      sendBtn.disabled = false;
+    }
+  }
+</script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/service-worker.js')
+        .then(reg => console.log('SW registrado:', reg.scope))
+        .catch(err => console.log('SW falhou:', err));
+    });
+  }
+</script>
 </body>
 </html>

@@ -1,21 +1,29 @@
 {
-  "name": "Oráculo Chat IA",
+  "name": "Oráculo - Chat IA",
   "short_name": "Oráculo",
-  "description": "Chat de inteligência artificial com múltiplos modelos",
+  "description": "Chat de inteligência artificial com múltiplos modelos — DeepSeek, Hugging Face e detecção automática",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#0f172a",
-  "theme_color": "#3b82f6",
+  "orientation": "portrait-primary",
+  "background_color": "#07050d",
+  "theme_color": "#8b5cf6",
+  "lang": "pt-BR",
+  "categories": ["productivity", "utilities"],
   "icons": [
     {
-      "src": "icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png"
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
     },
     {
       "src": "icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     }
-  ]
+  ],
+  "screenshots": [],
+  "shortcuts": []
 }
