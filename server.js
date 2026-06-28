@@ -329,9 +329,15 @@ Arquivos a melhorar: ${fileList}`;
   }
 });
 
-// ── Serve arquivos estáticos da pasta public ──
-app.use(express.static(path.join(__dirname, 'public')));
+// ── Serve arquivos estáticos da pasta public (apenas dev local) ──
+if (require.main === module) {
+  app.use(express.static(path.join(__dirname, 'public')));
+}
 
-app.listen(PORT, () => {
-  console.log(`Oráculo rodando em http://localhost:${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Oráculo rodando em http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;
