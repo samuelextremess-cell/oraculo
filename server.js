@@ -237,7 +237,7 @@ app.post('/api/github/save', async (req, res) => {
 // ── Auto-melhoria: retorna código fonte ──
 app.get('/api/source', (_req, res) => {
   try {
-    const files = ['index.html', 'server.js'];
+    const files = ['public/index.html', 'server.js'];
     const sources = {};
     files.forEach(f => {
       sources[f] = fs.readFileSync(path.join(__dirname, f), 'utf-8');
@@ -251,7 +251,7 @@ app.get('/api/source', (_req, res) => {
 // ── Auto-melhoria: analisa código e retorna sugestões ──
 app.post('/api/improve/analyze', async (req, res) => {
   try {
-    const files = ['index.html', 'server.js'];
+    const files = ['public/index.html', 'server.js'];
     const sources = {};
     files.forEach(f => {
       sources[f] = fs.readFileSync(path.join(__dirname, f), 'utf-8');
@@ -318,7 +318,7 @@ Arquivos a melhorar: ${fileList}`;
     const results = [];
     for (const [filename, content] of Object.entries(improved)) {
       const filePath = path.join(__dirname, filename);
-      if (!['index.html', 'server.js'].includes(filename)) continue;
+      if (!['public/index.html', 'server.js'].includes(filename)) continue;
       fs.writeFileSync(filePath, content, 'utf-8');
       results.push(filename);
     }
@@ -329,8 +329,8 @@ Arquivos a melhorar: ${fileList}`;
   }
 });
 
-// ── Serve os arquivos estáticos depois das rotas da API ──
-app.use(express.static(__dirname));
+// ── Serve arquivos estáticos da pasta public ──
+app.use(express.static(path.join(__dirname, 'public')));
 
 app.listen(PORT, () => {
   console.log(`Oráculo rodando em http://localhost:${PORT}`);

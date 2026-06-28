@@ -17,20 +17,19 @@ O **Oráculo** é uma interface central de chat com múltiplos modelos de IA, co
 ```
 Navegador (HTML/CSS/JS vanilla + PWA)
       ↓  chamadas fetch para /api/*
-Node.js + Express (proxy de APIs + serve estáticos)
+Vercel Serverless Functions (pasta /api/)
       ↓
 ┌──────────────────────────────────────────┐
-│  callDeepSeek()   │  callHuggingFace()   │
-│  DeepSeek API     │  Hugging Face API    │
-│  (programação)    │  (outros modelos)    │
+│  DeepSeek API   │  Hugging Face API      │
+│  (programação)  │  (outros modelos)      │
 └──────────────────────────────────────────┘
       ↓
-localStorage (histórico) + GitHub (backup /api/github/save)
+localStorage (histórico) + GitHub (backup)
       ↓
 Vercel (deploy automático via autopush)
 ```
 
-**Por que o proxy Express?** Tokens (`DS_TOKEN`, `HF_TOKEN`, `GITHUB_TOKEN`) ficam apenas no servidor, lidos de `process.env`. O frontend nunca vê um token — chama `/api/chat/*`, `/api/models`, `/api/github/save`, `/api/improve/*` e o Express faz a ponte com as APIs externas.
+**Por que serverless?** Tokens (`DS_TOKEN`, `HF_TOKEN`, `GITHUB_TOKEN`) ficam apenas nas variáveis de ambiente do Vercel. O frontend chama `/api/*` e cada rota é uma função serverless independente na pasta `/api/`.
 
 ---
 
@@ -38,35 +37,48 @@ Vercel (deploy automático via autopush)
 
 | Camada | Tecnologia |
 |---|---|
-| Frontend | HTML5 + CSS3 + JavaScript vanilla (sem framework) |
-| Backend | Node.js + Express (proxy de APIs) |
-| Estado | Objeto `chatHistory[]` em memória + `localStorage` (`oraculoHistory`) |
+| Frontend | HTML5 + CSS3 + JavaScript vanilla |
+| Backend (local) | Node.js + Express (`server.js`) |
+| Backend (produção) | Vercel Serverless Functions (`/api/*.js`) |
+| Estado | `chatHistory[]` + `localStorage` (`oraculoHistory`) |
 | IA principal | DeepSeek API (`/v1/chat/completions`) |
-| IA auxiliar | Hugging Face Inference API (`/models/{id}`) |
-| Roteamento | `detectBestModel()` — análise de palavras-chave no servidor |
-| Voz | Web Speech API nativa (STT para input, TTS para output) |
+| IA auxiliar | Hugging Face Inference API |
+| Roteamento | `detectBestModel()` — análise de palavras-chave |
+| Voz | Web Speech API nativa (STT + TTS) |
 | Persistência | `localStorage` + export/import JSON + backup GitHub |
 | Deploy | Vercel (auto-deploy no push para `main`) |
-| PWA | Service Worker (`cache-first`) + manifest.json + ícone SVG |
+| PWA | Service Worker + manifest.json + ícone SVG |
 
 ---
 
-## 📁 Estrutura de Pastas (arquivos planos na raiz)
+## 📁 Estrutura de Pastas
 
 ```
-C:\Users\samue\Documents\oraculo\
-├── index.html             # Frontend completo (CSS inline + JS inline)
-├── server.js              # Express — proxy APIs + serve estáticos
-├── package.json           # Dependências: express, dotenv
-├── manifest.json          # Config PWA (standalone, tema roxo)
-├── service-worker.js      # Service Worker (precache + cache-first)
-├── icon.svg               # Ícone PWA (orb roxo com glow dourado)
-├── .env                   # Tokens reais (gitignored)
-├── .env.example           # Template com placeholders
-├── .gitignore             # node_modules, .env, autopush.*
-├── autopush.ps1           # Script auto-push (loop 30s)
-├── autopush.bat           # Atalho dois cliques para autopush
-└── EVERYTHING_CONTEXT.md  # Este arquivo
+oraculo/
+├── public/                    # Arquivos estáticos (servidos pelo Vercel)
+│   ├── index.html             # Frontend completo (CSS + JS inline)
+│   ├── manifest.json          # Config PWA
+│   ├── service-worker.js      # Service Worker (cache-first)
+│   └── icon.svg               # Ícone PWA
+├── api/                       # Vercel Serverless Functions
+│   ├── _lib.js                # Funções compartilhadas (callDeepSeek, etc.)
+│   ├── chat/
+│   │   ├── deepseek.js        # POST /api/chat/deepseek
+│   │   ├── auto.js            # POST /api/chat/auto
+│   │   └── huggingface.js     # POST /api/chat/huggingface
+│   ├── models.js              # GET /api/models
+│   ├── github/
+│   │   └── save.js            # POST /api/github/save
+│   └── improve/
+│       ├── analyze.js         # POST /api/improve/analyze
+│       └── apply.js           # POST /api/improve/apply
+├── server.js                  # Express (dev local)
+├── vercel.json                # Config de rotas Vercel
+├── package.json               # Dependências: express, dotenv
+├── .env / .env.example        # Tokens (local)
+├── .gitignore
+├── autopush.ps1 / .bat        # Auto-push scripts
+└── EVERYTHING_CONTEXT.md      # Este arquivo
 ```
 
 ---
