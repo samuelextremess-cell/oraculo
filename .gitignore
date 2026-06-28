@@ -6,3 +6,4 @@ node_modules/
 Thumbs.db
 autopush.ps1
 autopush.bat
+.vercel
