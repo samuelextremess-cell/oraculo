@@ -237,7 +237,7 @@ app.post('/api/github/save', async (req, res) => {
 // ── Auto-melhoria: retorna código fonte ──
 app.get('/api/source', (_req, res) => {
   try {
-    const files = ['public/index.html', 'server.js'];
+    const files = ['index.html', 'server.js'];
     const sources = {};
     files.forEach(f => {
       sources[f] = fs.readFileSync(path.join(__dirname, f), 'utf-8');
@@ -251,7 +251,7 @@ app.get('/api/source', (_req, res) => {
 // ── Auto-melhoria: analisa código e retorna sugestões ──
 app.post('/api/improve/analyze', async (req, res) => {
   try {
-    const files = ['public/index.html', 'server.js'];
+    const files = ['index.html', 'server.js'];
     const sources = {};
     files.forEach(f => {
       sources[f] = fs.readFileSync(path.join(__dirname, f), 'utf-8');
@@ -329,9 +329,9 @@ Arquivos a melhorar: ${fileList}`;
   }
 });
 
-// ── Serve arquivos estáticos da pasta public (apenas dev local) ──
+// ── Serve arquivos estáticos (apenas dev local) ──
 if (require.main === module) {
-  app.use(express.static(path.join(__dirname, 'public')));
+  app.use(express.static(__dirname));
 }
 
 if (require.main === module) {
